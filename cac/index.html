@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Toggle Scientific Calculator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #6a11cb, #2575fc);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .calculator {
+      background: #471f76;
+      padding: 20px;
+      border-radius: 20px;
+      box-shadow: 0 8px 15px #220951;
+      width: 400px;
+      color: #fff;
+      transition: 0.3s;
+    }
+    .display {
+      background: #111;
+      border-radius: 10px;
+      padding: 15px;
+      text-align: right;
+      margin-bottom: 20px;
+      word-wrap: break-word;
+    }
+    #expression {
+      font-size: 1.4em;
+      border: none;
+      background: transparent;
+      color: #fff;
+      width: 100%;
+      outline: none;
+    }
+    #result {
+      font-size: 1.8em;
+      font-weight: bold;
+      color: #00ff99;
+      margin-top: 5px;
+      min-height: 30px;
+    }
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+    }
+    button {
+      padding: 15px;
+      font-size: 1.1em;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    button:active {
+      transform: scale(0.95);
+    }
+    .num { background: #2e2e3d; color: #fff; }
+    .num:hover { background: #3e3e4d; }
+    .op { background: #ff9500; color: #fff; }
+    .op:hover { background: #e08900; }
+    .clear { background: #ff3b30; color: #fff; }
+    .delete { background: #ffcc00; color: #000; }
+    .special { background: #34c759; color: #fff; }
+    .equals { background: #007aff; color: #fff; grid-column: span 2; }
+
+    /* Toggle button */
+    .toggle-btn {
+      display: block;
+      margin: 15px auto;
+      padding: 10px 20px;
+      font-size: 1em;
+      font-weight: bold;
+      border-radius: 20px;
+      border: none;
+      background: linear-gradient(135deg, #ff7eb3, #ff758c);
+      color: #fff;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .toggle-btn:hover {
+      background: linear-gradient(135deg, #ff6a95, #ff476f);
+    }
+
+    /* Hide scientific buttons by default */
+    .sci-buttons {
+      display: none;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-bottom: 15px;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="calculator">
+    <div class="display">
+      <input type="text" id="expression" placeholder="0">
+      <div id="result"></div>
+    </div>
+
+    <!-- Toggle button -->
+    <button class="toggle-btn" onclick="toggleMode()">Switch to Scientific Mode</button>
+
+    <!-- Scientific row (hidden initially) -->
+    <div class="sci-buttons" id="sciRow">
+      <button onclick="append('Math.sin(')" class="special">sin</button>
+      <button onclick="append('Math.cos(')" class="special">cos</button>
+      <button onclick="append('Math.tan(')" class="special">tan</button>
+      <button onclick="append('Math.log10(')" class="special">log</button>
+      <button onclick="append('Math.log(')" class="special">ln</button>
+
+      <button onclick="append('Math.PI')" class="special">π</button>
+      <button onclick="append('Math.E')" class="special">e</button>
+      <button onclick="append('Math.sqrt(')" class="special">√</button>
+      <button onclick="append('')" class="special">^</button>
+      <button onclick="append('!')" class="special">n!</button>
+    </div>
+
+    <!-- Standard calculator rows -->
+    <div class="buttons">
+      <button onclick="clearInput()" class="clear">C</button>
+      <button onclick="deleteLast()" class="delete">←</button>
+      <button onclick="append('%')" class="op">%</button>
+      <button onclick="append('/')" class="op">÷</button>
+      <button onclick="append('(')" class="num">(</button>
+
+      <button onclick="append('7')" class="num">7</button>
+      <button onclick="append('8')" class="num">8</button>
+      <button onclick="append('9')" class="num">9</button>
+      <button onclick="append('*')" class="op">×</button>
+      <button onclick="append(')')" class="num">)</button>
+
+      <button onclick="append('4')" class="num">4</button>
+      <button onclick="append('5')" class="num">5</button>
+      <button onclick="append('6')" class="num">6</button>
+      <button onclick="append('-')" class="op">−</button>
+      <button onclick="append('.')" class="num">.</button>
+
+      <button onclick="append('1')" class="num">1</button>
+      <button onclick="append('2')" class="num">2</button>
+      <button onclick="append('3')" class="num">3</button>
+      <button onclick="append('+')" class="op">+</button>
+      <button onclick="append('0')" class="num">0</button>
+
+      <button onclick="calculateFinal()" class="equals">=</button>
+    </div>
+  </div>
+
+  <script>
+    const input = document.getElementById("expression");
+    const resultDiv = document.getElementById("result");
+    const sciRow = document.getElementById("sciRow");
+    const toggleBtn = document.querySelector(".toggle-btn");
+    let sciVisible = false;
+
+    // Factorial function
+    function factorial(n) {
+      if (n < 0) return NaN;
+      if (n === 0 || n === 1) return 1;
+      let res = 1;
+      for (let i = 2; i <= n; i++) res *= i;
+      return res;
+    }
+
+    function calculate() {
+      try {
+        let value = input.value;
+
+        // Handle factorial (!)
+        if (value.includes("!")) {
+          value = value.replace(/(\d+)!/g, (match, num) => factorial(parseInt(num)));
+        }
+
+        // Replace ^ with ** (power)
+        value = value.replace(/\^/g, "");
+
+        let result = eval(value);
+        resultDiv.textContent = "= " + result;
+      } catch {
+        resultDiv.textContent = "";
+      }
+    }
+
+    function calculateFinal() {
+      calculate();
+      input.value = resultDiv.textContent.replace("= ", "");
+    }
+
+    function append(char) {
+      input.value += char;
+      calculate();
+    }
+
+    function clearInput() {
+      input.value = "";
+      resultDiv.textContent = "";
+    }
+
+    function deleteLast() {
+      input.value = input.value.slice(0, -1);
+      calculate();
+    }
+
+    function toggleMode() {
+      sciVisible = !sciVisible;
+      if (sciVisible) {
+        sciRow.style.display = "grid";
+        toggleBtn.textContent = "Switch to Standard Mode";
+      } else {
+        sciRow.style.display = "none";
+        toggleBtn.textContent = "Switch to Scientific Mode";
+      }
+    }
+
+    input.addEventListener("input", calculate);
+  </script>
+</body>
+</html>
