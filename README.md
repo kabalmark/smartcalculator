@@ -22,7 +22,7 @@
     }
 
     .calculator {
-      width: 340px;
+      width: 360px;
       background: rgba(255,255,255,0.05);
       border-radius: 15px;
       box-shadow: 0 8px 25px rgba(0,0,0,0.5);
@@ -43,8 +43,16 @@
       font-size: 20px;
       border: none;
       border-radius: 10px;
-      margin-bottom: 12px;
+      margin-bottom: 6px;
       text-align: right;
+    }
+    .result {
+      width: 100%;
+      padding: 8px;
+      font-size: 18px;
+      text-align: right;
+      color: #00ffcc;
+      min-height: 24px;
     }
 
     /* Mode Toggle */
@@ -160,6 +168,7 @@
 
     <!-- Display -->
     <input type="text" id="display" class="display" readonly>
+    <div class="result" id="result"></div>
 
     <!-- Buttons area -->
     <div class="buttons" id="buttonsArea"></div>
@@ -168,6 +177,7 @@
   <script>
     let currentMode = 'basic';
     const display = document.getElementById("display");
+    const result = document.getElementById("result");
     const buttonsArea = document.getElementById("buttonsArea");
 
     function toggleMenu() {
@@ -186,27 +196,22 @@
     function loadMode() {
       buttonsArea.innerHTML = "";
       display.value = "";
-      if (currentMode === "basic") {
-        ["7","8","9","+","4","5","6","-","1","2","3","*","0",".","/"].forEach(val=>{
+      result.textContent = "";
+
+      if (currentMode === "basic" || currentMode === "scientific") {
+        let keys = [
+          "7","8","9","+",
+          "4","5","6","-",
+          "1","2","3","*",
+          "0",".","/","=",
+          "C","sin","cos","tan",
+          "sqrt","^","log","π",
+          "e","(",")"
+        ];
+        keys.forEach(val=>{
           const btn = document.createElement("button");
           btn.textContent = val;
-          btn.onclick = () => {
-            display.value += val;
-            autoCalculate();
-          };
-          buttonsArea.appendChild(btn);
-        });
-      }
-      else if (currentMode === "scientific") {
-        ["sin","cos","tan","sqrt","^","log","π","e"].forEach(fn=>{
-          const btn = document.createElement("button");
-          btn.textContent = fn;
-          btn.onclick = () => {
-            if(fn==="π") display.value+="3.1416";
-            else if(fn==="e") display.value+="2.718";
-            else display.value += fn+"(";
-            autoCalculate();
-          };
+          btn.onclick = () => handleInput(val);
           buttonsArea.appendChild(btn);
         });
       }
@@ -215,26 +220,50 @@
       }
       else if (currentMode === "temp") {
         buttonsArea.innerHTML = `
-          <input type="number" id="tempInput" placeholder="Enter °C" 
-          oninput="convertTemp()">
+          <input type="number" id="tempInput" placeholder="Enter °C" oninput="convertTemp()">
           <p id="tempResult"></p>`;
       }
       else if (currentMode === "distance") {
         buttonsArea.innerHTML = `
-          <input type="number" id="distInput" placeholder="Enter km" 
-          oninput="calcTime()">
+          <input type="number" id="distInput" placeholder="Enter km" oninput="calcTime()">
           <p id="distResult"></p>`;
+      }
+    }
+
+    function handleInput(val) {
+      if (val === "=") {
+        try {
+          let exp = display.value.replace(/\^/g,"**");
+          let ans = eval(exp);
+          result.textContent = ans;
+          display.value = ans;
+        } catch {
+          result.textContent = "Error";
+        }
+      } else if (val === "C") {
+        display.value = "";
+        result.textContent = "";
+      } else {
+        if (val==="π") val="3.1416";
+        if (val==="e") val="2.718";
+        if (["sin","cos","tan","sqrt","log"].includes(val)) {
+          display.value += val+"(";
+        } else {
+          display.value += val;
+        }
+        autoCalculate();
       }
     }
 
     function autoCalculate() {
       try {
         if (display.value) {
-          let exp = display.value.replace("^","**");
-          display.value = eval(exp);
+          let exp = display.value.replace(/\^/g,"**");
+          let ans = eval(exp);
+          result.textContent = ans;
         }
       } catch {
-        // ignore errors until valid
+        result.textContent = "";
       }
     }
 
@@ -251,7 +280,7 @@
     function calcTime() {
       const km = parseFloat(document.getElementById("distInput").value);
       if (!isNaN(km)) {
-        const speed = 60; // assume avg 60 km/h
+        const speed = 60; // avg 60 km/h
         const time = km / speed;
         const result = time < 1 
           ? `${Math.round(time*60)} min`
