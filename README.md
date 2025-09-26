@@ -203,8 +203,8 @@
       <select id="unitType">
         <option value="cm-m">cm → m</option>
         <option value="m-cm">m → cm</option>
-        <option value="km-m">km → m</option>
-        <option value="m-km">m → km</option>
+        <option value="kg-lb">kg → lb</option>
+        <option value="lb-kg">lb → kg</option>
       </select>
       <button onclick="convertUnit()">Convert</button>
       <div class="output" id="unitOutput"></div>
@@ -307,36 +307,56 @@
       document.getElementById("modeMenu").classList.remove("active");
     }
 
-    // Unit converter
+    // Unit converter with reference
     function convertUnit(){
       let v=parseFloat(document.getElementById("unitInput").value);
       let t=document.getElementById("unitType").value;
       let out="";
       if(t==="cm-m") out=(v/100)+" m";
       if(t==="m-cm") out=(v*100)+" cm";
-      if(t==="km-m") out=(v*1000)+" m";
-      if(t==="m-km") out=(v/1000)+" km";
-      document.getElementById("unitOutput").textContent=out;
+      if(t==="kg-lb") out=(v*2.20462).toFixed(2)+" lb";
+      if(t==="lb-kg") out=(v/2.20462).toFixed(2)+" kg";
+
+      let ref="";
+      if(t.includes("kg")) {
+        if(v>=70) ref="≈ average adult human weight 🧍";
+        else if(v<=5) ref="≈ a newborn baby 👶";
+      }
+      if(t.includes("cm")||t.includes("m")) {
+        if(v>=200) ref="≈ tall door frame 🚪";
+        else if(v<=50) ref="≈ small child’s height 🧒";
+      }
+      document.getElementById("unitOutput").textContent=out+" "+ref;
     }
 
-    // Temperature converter
+    // Temperature converter with hot/cold
     function convertTemp(){
       let v=parseFloat(document.getElementById("tempInput").value);
       let t=document.getElementById("tempType").value;
-      let out="";
-      if(t==="c-f"){ out=(v*9/5+32)+" °F"; }
-      if(t==="f-c"){ out=((v-32)*5/9)+" °C"; }
-      document.getElementById("tempOutput").textContent=out;
+      let out="", condition="";
+      if(t==="c-f"){ out=(v*9/5+32).toFixed(1)+" °F"; condition=tempCondition(v,"C"); }
+      if(t==="f-c"){ let c=((v-32)*5/9).toFixed(1); out=c+" °C"; condition=tempCondition(c,"C"); }
+      document.getElementById("tempOutput").textContent=out+" → "+condition;
+    }
+    function tempCondition(val,unit){
+      let c=unit==="C"?val:((val-32)*5/9);
+      if(c<10) return "Cold ❄️";
+      if(c<25) return "Warm 🌤️";
+      return "Hot 🔥";
     }
 
-    // Distance calculator
+    // Distance calculator with context
     function calcDist(){
       let d=parseFloat(document.getElementById("distInput").value);
       let s=parseFloat(document.getElementById("speedInput").value);
       if(d && s){
         let h=d/s;
         let min=(h*60).toFixed(1);
-        document.getElementById("distOutput").textContent=`${h.toFixed(2)} hours (${min} minutes)`;
+        let ref="";
+        if(d<1) ref="Walking distance 🚶";
+        else if(d<=20) ref="Short trip 🚗";
+        else ref="Long travel ✈️";
+        document.getElementById("distOutput").textContent=`${h.toFixed(2)} hours (${min} minutes) → ${ref}`;
       }
     }
 
